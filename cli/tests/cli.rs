@@ -18,7 +18,7 @@ fn bin() -> Command {
 #[test]
 fn validate_and_extract() {
     let dir = tmp("validate");
-    let schema = dir.join("s.mdp");
+    let schema = dir.join("s.schema.md");
     let doc = dir.join("d.md");
     fs::write(&schema, "## @plan Plan\n  - +@cases\n").unwrap();
     fs::write(&doc, "## Plan\n- a\n- b\n").unwrap();
@@ -49,7 +49,7 @@ fn validate_and_extract() {
 #[test]
 fn validate_failure_sets_exit_code() {
     let dir = tmp("fail");
-    let schema = dir.join("s.mdp");
+    let schema = dir.join("s.schema.md");
     let doc = dir.join("d.md");
     fs::write(&schema, "## @plan Plan\n  - +@cases\n").unwrap();
     fs::write(&doc, "## Plan\n").unwrap(); // no items
@@ -67,7 +67,7 @@ fn validate_failure_sets_exit_code() {
 #[test]
 fn extract_and_render_round_trip_every_format() {
     let dir = tmp("formats");
-    let schema = dir.join("s.mdp");
+    let schema = dir.join("s.schema.md");
     let doc = dir.join("d.md");
     fs::write(
         &schema,
@@ -136,12 +136,12 @@ fn run_ok(cmd: &mut Command) -> String {
 fn missing_file_error_names_the_path() {
     let out = bin()
         .arg("validate")
-        .arg("/no/such/schema.mdp")
+        .arg("/no/such/feature.schema.md")
         .output()
         .unwrap();
     assert_eq!(out.status.code(), Some(2));
     assert!(
-        String::from_utf8_lossy(&out.stderr).contains("/no/such/schema.mdp"),
+        String::from_utf8_lossy(&out.stderr).contains("/no/such/feature.schema.md"),
         "stderr: {}",
         String::from_utf8_lossy(&out.stderr)
     );
@@ -157,7 +157,7 @@ fn both_inputs_from_stdin_is_rejected() {
 #[test]
 fn scaffold_render_and_edit() {
     let dir = tmp("edit");
-    let schema = dir.join("s.mdp");
+    let schema = dir.join("s.schema.md");
     fs::write(&schema, "## @plan Plan\n  - +@cases\n").unwrap();
 
     // scaffold prints a starter document that validates.

@@ -1,5 +1,8 @@
 # marklens — markdown ⇄ data, via a template
 
+[![crates.io](https://img.shields.io/crates/v/marklens-core.svg)](https://crates.io/crates/marklens-core)
+[![docs.rs](https://docs.rs/marklens-core/badge.svg)](https://docs.rs/marklens-core)
+
 One compact schema (a textual DSL) defines a bidirectional mapping between a
 markdown document and a JSON data object. The schema looks like a skeleton of
 the document it describes. From it you can **validate** a document,
@@ -120,21 +123,23 @@ cargo install marklens   # installs the `marklens` executable
 
 One subcommand per verb; the schema is the first argument, documents and data
 default to stdin (`-`). Validation and extraction exit non-zero when a document
-does not conform, so it composes in CI:
+does not conform, so it composes in CI. A schema is itself markdown, and
+`*.schema.md` is the naming convention used throughout this repo:
 
 ```sh
-marklens validate schema.mdp doc.md        # exit 1 + located problems on stderr
-marklens extract  schema.mdp doc.md        # JSON on stdout
-marklens render   schema.mdp data.json     # markdown on stdout
-marklens scaffold schema.mdp               # starter document
-marklens edit     schema.mdp doc.md plan.cases.0 "new text" --in-place
+marklens validate feature.schema.md doc.md     # exit 1 + problems on stderr
+marklens extract  feature.schema.md doc.md     # JSON on stdout
+marklens render   feature.schema.md data.json  # markdown on stdout
+marklens scaffold feature.schema.md            # starter document
+marklens edit     feature.schema.md doc.md plan.cases.0 "new text" --in-place
 ```
 
 `extract` and `render` speak JSON, YAML, TOML, and XML via `-f/--format`
 (`render` also infers it from the data file's extension); all four round-trip:
 
 ```sh
-marklens extract -f yaml schema.mdp doc.md | marklens render -f yaml schema.mdp -
+marklens extract -f yaml feature.schema.md doc.md \
+  | marklens render -f yaml feature.schema.md -
 ```
 
 ## Development
