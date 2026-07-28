@@ -1,0 +1,150 @@
+# marklens — markdown ⇄ data, via a template
+
+One compact schema (a textual DSL) defines a bidirectional mapping between a
+markdown document and a JSON data object. The schema looks like a skeleton of
+the document it describes. From it you can **validate** a document,
+**extract** it to JSON, **render** JSON back to markdown, **scaffold** a
+starter document, and **edit** one node in place without touching any other
+byte.
+
+```markdown
+## @summary Summary
+  > @blurb                <? required paragraph ?>
+## @plan Test plan
+  - [ ] +@cases           <? checklist, one or more items ?>
+```
+
+Headings nest by **level** in the schema, mirroring the documents it matches
+(a sub-heading needn't be indented); lists and prose nest by indentation.
+`@names` are the keys of the extracted JSON.
+
+## Quickstart
+
+```rust
+use marklens_core::parse_schema;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Headings nest by INDENTATION in the schema (mirroring heading levels).
+    let schema = parse_schema(
+        "## @summary Summary\n  > @blurb\n## @plan Test plan\n  - [ ] +@cases\n",
+    )?;
+
+    let doc = "\
+## Summary
+Adds detached-head support to the sync command.
+
+## Test plan
+- [x] sync works from a detached head
+- [ ] sync refuses when the tree is dirty
+";
+
+    // Validate: empty Vec means the document conforms.
+    let problems = schema.validate(doc);
+    assert!(problems.is_empty());
+
+    // Extract: markdown -> JSON, keyed by capture aliases. Checklist items
+    // carry their checked state.
+    let data = schema.extract(doc).map_err(|p| format!("{p:?}"))?;
+    println!("{}", serde_json::to_string_pretty(&data)?);
+    // {
+    //   "plan": {
+    //     "cases": [
+    //       { "text": "sync works from a detached head", "checked": true },
+    //       { "text": "sync refuses when the tree is dirty", "checked": false }
+    //     ]
+    //   },
+    //   "summary": {
+    //     "blurb": "Adds detached-head support to the sync command."
+    //   }
+    // }
+    Ok(())
+}
+```
+
+## DSL cheat sheet
+
+| Construct | Syntax | Meaning |
+| --- | --- | --- |
+| Heading | `## Title` | heading of that level; literal titles are case-sensitive **prefix** matches (`Setup` matches `Setup and teardown`) |
+| Bullet / ordered / checklist | `- ` / `1. ` / `- [ ]` | a list of that style; child lines constrain each item |
+| Prose | `> ` | a non-empty paragraph |
+| Cardinality (glued after the marker) | `+` `*` `?` `{m}` `{m,}` `{m,n}` | ≥1 / ≥0 / optional / explicit bounds; bare = required. Item count on lists, matching-section count on headings, presence on prose |
+| Capture alias | `@name` (glued: `- +@items`) | key in the extracted JSON; headings without one auto-derive a slug of their title (`Test plan` → `test_plan`) |
+| Label | `Docs:` / `/regex/flags` / `"quoted"` | constrains the node's text: literal = prefix match, regex = unanchored match against *flattened* inline text |
+| Description | `<? text ?>` | trailing doc comment; runs to end of line; never affects matching |
+| Directives | `%ordered=` `%strict=` `%frontmatter=` | top-of-schema options (all enforced): declared order, error on unexpected blocks, closed key set |
+| Frontmatter | `--- key?: type ---` | typed keys (`string int bool date enum(..) [T] /re/`), checked and captured; a small YAML subset (scalars, quoted scalars, flow lists) |
+
+[`docs/structure-dsl-spec.md`](docs/structure-dsl-spec.md) has the full
+grammar (with a per-feature implementation-status table);
+[`docs/marklens-reference.md`](docs/marklens-reference.md) is a worked example
+end to end, every artifact verified against the implementation.
+
+## Round-trip contract
+
+`extract` and `render` are inverses: for a schema whose captured string values
+are plain text, `extract(render(data)) == data` and `render(extract(md))`
+re-validates. `edit` splices a single node's byte span and leaves every other
+byte untouched, escaping the replacement so the document still round-trips.
+These laws are exercised by property tests (`tests/roundtrip.rs`) and fuzzed
+(`fuzz/`).
+
+Where a law cannot hold, the crate is explicit about it rather than silent:
+
+- Captured text is **trimmed** — leading/trailing whitespace in a value is not
+  preserved.
+- Inline markup a document already contains (emphasis, links, images) is
+  **flattened to its text** on extract; a `/regex/` label matches that
+  flattened text, not raw markdown syntax.
+- Two adjacent same-marker lists in one scope are **rejected at parse time**,
+  because markdown would merge them into one.
+- Block types outside the vocabulary (tables, code fences, blockquotes) are
+  opaque: under `%strict` (the default) they are reported as unexpected
+  blocks; under `%strict = false` they are ignored.
+
+## Status
+
+This is a 0.1.0 crate; the API is `0.x` and may change. The design spec's
+implementation-status table records what's landed and what's planned; releases
+and their changelog are generated by
+[release-plz](https://release-plz.dev) from the commit history.
+
+## CLI
+
+The [`marklens`](cli/) crate provides a `marklens` command-line tool, so
+installing it pulls no dependencies into this library:
+
+```sh
+cargo install marklens   # installs the `marklens` executable
+```
+
+One subcommand per verb; the schema is the first argument, documents and data
+default to stdin (`-`). Validation and extraction exit non-zero when a document
+does not conform, so it composes in CI:
+
+```sh
+marklens validate schema.mdp doc.md        # exit 1 + located problems on stderr
+marklens extract  schema.mdp doc.md        # JSON on stdout
+marklens render   schema.mdp data.json     # markdown on stdout
+marklens scaffold schema.mdp               # starter document
+marklens edit     schema.mdp doc.md plan.cases.0 "new text" --in-place
+```
+
+`extract` and `render` speak JSON, YAML, TOML, and XML via `-f/--format`
+(`render` also infers it from the data file's extension); all four round-trip:
+
+```sh
+marklens extract -f yaml schema.mdp doc.md | marklens render -f yaml schema.mdp -
+```
+
+## Development
+
+`nix develop` (or direnv) provides the Rust toolchain. `cargo test --workspace`
+runs the suite (library + CLI). Property tests live in `tests/roundtrip.rs`,
+fuzz targets in `fuzz/`, and the CLI in the `cli/` crate. `markdownlint-cli2`
+lints every markdown file in the repo (rules in `.markdownlint-cli2.jsonc`); CI
+runs the same check.
+
+## License
+
+Apache-2.0

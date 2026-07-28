@@ -1,0 +1,19 @@
+[book]
+title = "marklens"
+description = "markdown ⇄ data, via a template — validate, extract, render, scaffold, and edit markdown against a compact schema DSL"
+authors = ["Bohdan Tkachenko"]
+language = "en"
+# The book is built straight from the docs/ markdown — no content is duplicated.
+src = "docs"
+
+[output.html]
+git-repository-url = "https://github.com/BohdanTkachenko/marklens"
+default-theme = "rust"
+preferred-dark-theme = "ayu"
+
+[output.html.fold]
+enable = true
+level = 1
+
+[output.html.search]
+enable = true

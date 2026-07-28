@@ -1,0 +1,26 @@
+[package]
+name = "marklens"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Command-line interface for marklens — validate, extract, render, scaffold, and edit markdown against a template DSL"
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/BohdanTkachenko/marklens"
+keywords = ["markdown", "schema", "template", "cli", "validation"]
+categories = ["command-line-utilities", "text-processing"]
+
+# Installs as the `marklens` executable: `cargo install marklens`.
+[[bin]]
+name = "marklens"
+path = "src/main.rs"
+# The library crate already owns target/doc/marklens; don't collide with it.
+doc = false
+
+[dependencies]
+marklens-core = { version = "0.1.0", path = ".." }
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+toml = "0.8"
+quick-xml = "0.41"

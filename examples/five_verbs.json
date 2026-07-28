@@ -1,0 +1,18 @@
+{
+  "title": "Tab titles follow OSC",
+  "status": "done",
+  "manual": {
+    "setup": {
+      "items": ["external monitor at 150%"]
+    },
+    "procedure": {
+      "steps": ["open a tab", "run the command"]
+    }
+  },
+  "plan": {
+    "cases": [
+      { "text": "smoke", "checked": true },
+      { "text": "edge case", "checked": false }
+    ]
+  }
+}

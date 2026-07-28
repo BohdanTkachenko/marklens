@@ -1,0 +1,25 @@
+[workspace]
+members = ["cli"]
+exclude = ["fuzz"]
+
+[package]
+name = "marklens-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "markdown ⇄ data via one compact template DSL: validate, extract, scaffold, render, and edit in place"
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/BohdanTkachenko/marklens"
+keywords = ["markdown", "schema", "template", "validation"]
+categories = ["parser-implementations", "template-engine"]
+exclude = ["/cli", "/fuzz", "/.github", "/book", "/book.toml"]
+
+[dependencies]
+comrak = { version = "0.54", default-features = false }
+regex = "1"
+serde_json = "1"
+thiserror = "2"
+
+[dev-dependencies]
+proptest = "1"

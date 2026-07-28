@@ -1,0 +1,65 @@
+# Automated releases with release-plz (https://release-plz.dev).
+#
+# * "release-pr" opens/updates a Release PR that bumps crate versions and
+#   updates the changelogs from the commits since the last release.
+# * "release" publishes to crates.io, tags, and creates a GitHub release for any
+#   crate whose version on `main` is not yet published (typically right after a
+#   Release PR is merged). It publishes `marklens-core` before `marklens`,
+#   respecting the dependency.
+#
+# Setup required before this can publish:
+#   1. Make the repository public and add a `CARGO_REGISTRY_TOKEN` secret
+#      (a crates.io API token: https://crates.io/settings/tokens).
+#   2. Allow GitHub Actions to create pull requests
+#      (Settings → Actions → General → Workflow permissions).
+#   Optional: to have CI run on the Release PR, provide a Personal Access Token
+#   or GitHub App token in place of the default GITHUB_TOKEN (the default token
+#   cannot trigger other workflows).
+
+name: release-plz
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    name: release-plz release
+    if: github.repository_owner == 'BohdanTkachenko'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz
+        uses: release-plz/action@v0.5
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  release-pr:
+    name: release-plz PR
+    if: github.repository_owner == 'BohdanTkachenko'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-plz-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz
+        uses: release-plz/action@v0.5
+        with:
+          command: release-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
