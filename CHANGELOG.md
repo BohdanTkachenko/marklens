@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2](https://github.com/BohdanTkachenko/marklens/compare/marklens-core-v0.1.1...marklens-core-v0.1.2) - 2026-07-28
+
+### Other
+
+- adopt *.schema.md naming, add crates.io and docs.rs badges
+
 ## [0.1.1](https://github.com/BohdanTkachenko/marklens/compare/marklens-core-v0.1.0...marklens-core-v0.1.1) - 2026-07-28
 
 ### Fixed
