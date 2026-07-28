@@ -1,6 +1,6 @@
 [package]
 name = "marklens"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.88"
 description = "Command-line interface for marklens — validate, extract, render, scaffold, and edit markdown against a template DSL"
@@ -18,7 +18,7 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-marklens-core = { version = "0.1.0", path = ".." }
+marklens-core = { version = "0.1.1", path = ".." }
 clap = { version = "4", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
